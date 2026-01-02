@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 numpy==1.24.3
 opencv-python==4.8.1.78
 opencv-contrib-python==4.8.1.78
@@ -7,4 +8,15 @@ openpyxl==3.1.2
 pillow==10.1.0
 bcrypt==4.1.1
 cryptography==41.0.7
+=======
+numpy==1.24.3
+opencv-python==4.8.1.78
+opencv-contrib-python==4.8.1.78
+PyQt5==5.15.10
+pandas==2.0.3
+openpyxl==3.1.2
+pillow==10.1.0
+bcrypt==4.1.1
+cryptography==41.0.7
+>>>>>>> d935c11b575d73b8d5a01bceed8ac01c45e81b44
 matplotlib==3.7.2
