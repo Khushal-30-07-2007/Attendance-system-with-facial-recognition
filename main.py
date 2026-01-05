@@ -1580,7 +1580,8 @@ class AttendanceSystemGUI(QMainWindow):
     def closeEvent(self, event):
         if self.video_thread:
             self.video_thread.stop()
-        self.db.close()
+        if self.db:
+            self.db.close()
         event.accept()
 
 
