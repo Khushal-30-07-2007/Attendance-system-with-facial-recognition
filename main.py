@@ -609,10 +609,17 @@ class AttendanceSystemGUI(QMainWindow):
         username = self.username_input.text()
         password = self.password_input.text()
         
+        # Initialize database only when logging in (lazy loading for faster startup)
+        if self.db is None:
+            self.db = DatabaseManager()
+        
         user = self.db.authenticate_user(username, password)
         
         if user:
             self.current_user = user
+            # Initialize face engine only after successful login (lazy loading)
+            if self.face_engine is None:
+                self.face_engine = OpenCVFaceRecognizer(self.db)
             self.init_main_ui()
         else:
             QMessageBox.warning(self, "Login Failed", "Invalid credentials")
