@@ -295,6 +295,15 @@ class DatabaseManager:
 class OpenCVFaceRecognizer:
     """Uses OpenCV's built-in LBPH Face Recognizer - No dlib needed!"""
     
+    # Cache cascade classifier path (class variable - loaded once)
+    _cascade_path = None
+    
+    @classmethod
+    def _get_cascade_path(cls):
+        if cls._cascade_path is None:
+            cls._cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+        return cls._cascade_path
+    
     def __init__(self, db_manager):
         self.db = db_manager
         # Optimized LBPH parameters - balance of speed and accuracy
@@ -304,7 +313,8 @@ class OpenCVFaceRecognizer:
             grid_x=8,       # Standard grid
             grid_y=8
         )
-        self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        # Use cached path for faster loading
+        self.face_cascade = cv2.CascadeClassifier(self._get_cascade_path())
         
         self.known_face_metadata = []
         self.face_detection_tracker = {}
@@ -493,9 +503,15 @@ class VideoCaptureThread(QThread):
     
     def run(self):
         self.running = True
-        cap = cv2.VideoCapture(self.camera_id)
+        # Optimized camera initialization for faster opening (Windows DirectShow backend)
+        try:
+            cap = cv2.VideoCapture(self.camera_id, cv2.CAP_DSHOW)
+        except:
+            cap = cv2.VideoCapture(self.camera_id)
+        # Set properties before reading (faster initialization)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Reduce buffer for lower latency
         
         frame_count = 0
         
@@ -538,8 +554,9 @@ class VideoCaptureThread(QThread):
 class AttendanceSystemGUI(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.db = DatabaseManager()
-        self.face_engine = OpenCVFaceRecognizer(self.db)
+        # Lazy loading - only initialize database and face engine after login
+        self.db = None
+        self.face_engine = None
         self.current_user = None
         self.video_thread = None
         self.detection_start_time = {}
@@ -996,13 +1013,17 @@ class AttendanceSystemGUI(QMainWindow):
             )
             return
         
-        cap = cv2.VideoCapture(0)
+        # Optimized camera initialization
+        try:
+            cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+        except:
+            cap = cv2.VideoCapture(0)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
         
-        # Quick warm up
-        for _ in range(3):
-            cap.read()
+        # Quick warm up (reduced)
+        cap.read()
         
         QMessageBox.information(self, "Test Recognition", "Position your face in front of camera.\nTest will run for 3 seconds.")
         
@@ -1188,13 +1209,17 @@ class AttendanceSystemGUI(QMainWindow):
         
         def capture_face():
             try:
-                cap = cv2.VideoCapture(0)
+                # Optimized camera initialization
+                try:
+                    cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+                except:
+                    cap = cv2.VideoCapture(0)
                 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
                 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+                cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
                 
-                # Quick warm up
-                for _ in range(3):
-                    cap.read()
+                # Quick warm up (reduced)
+                cap.read()
                 
                 best_face = None
                 best_size = 0
